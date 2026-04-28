@@ -435,7 +435,7 @@
                     <div class="hint">Ví dụ dạng: https://script.google.com/macros/s/.../exec</div>
                   </div>
                   <div class="fineprint" style="margin-top:10px;">
-                    - Gemini: dùng endpoint Generative Language API, model <span class="mono">gemini-2.5-flash-preview-04-17</span>.<br/>
+                    - Gemini: dùng endpoint Generative Language API, model <span class="mono">gemini-2.5-flash</span>.<br/>
                     - Nominatim: yêu cầu có User-Agent/Referer; app này gọi trực tiếp từ trình duyệt (có thể bị giới hạn nếu gọi quá nhiều).<br/>
                     - Nếu gặp lỗi CORS khi lưu Apps Script, hãy bật “Deploy as web app” và cho phép truy cập phù hợp.
                   </div>
@@ -640,8 +640,8 @@
       const apiKey = getGeminiKeyOrThrow();
 
       const endpointCandidates = [
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent",
-        "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateContent"
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent"
       ];
 
       const parts = [];
@@ -762,7 +762,7 @@
         "- areaNumber chỉ chứa số (có thể có dấu . hoặc ,)."
       ].join("\n");
 
-      setStatus("Đang gọi Gemini OCR (gemini-2.5-flash-preview-04-17)...");
+      setStatus("Đang gọi Gemini OCR (gemini-2.5-flash)...");
       const { text } = await geminiGenerateContent({
         promptText: prompt,
         imageDataUrls: [frontUrl, backUrl],

@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Thẩm Định Giá & Khảo Sát Thực Địa</title>
+
+  <!-- Leaflet (no framework) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    :root{
+      --teal:#006B68;
+      --amber:#FFC62F;
+      --bg:#f7faf9;
+      --card:#ffffff;
+      --text:#0b1b1a;
+      --muted:#4a5b5a;
+      --border:rgba(0,0,0,.10);
+      --shadow:0 10px 25px rgba(0,0,0,.08);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1200px 420px at 15% -10%, rgba(255,198,47,.35), transparent 60%),
+        radial-gradient(900px 420px at 90% 0%, rgba(0,107,104,.20), transparent 55%),
+        var(--bg);
+    }
+    a{color:inherit}
+    .wrap{
+      width:min(980px, 100%);
+      margin:0 auto;
+      padding:14px 14px 28px;
+    }
+    header{
+      position:sticky;
+      top:0;
+      z-index:5;
+      background:linear-gradient(180deg, rgba(247,250,249,.92), rgba(247,250,249,.70));
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .header-inner{
+      width:min(980px, 100%);
+      margin:0 auto;
+      padding:12px 14px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-width:0;
+    }
+    .logo{
+      width:38px;height:38px;border-radius:12px;
+      background: conic-gradient(from 180deg, var(--teal), var(--amber), var(--teal));
+      box-shadow: 0 8px 18px rgba(0,107,104,.25);
+      border:1px solid rgba(255,255,255,.55);
+      flex:0 0 auto;
+    }
+    h1{
+      font-size:15.5px;
+      margin:0;
+      line-height:1.25;
+      letter-spacing:.1px;
+      font-weight:800;
+      color:var(--teal);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 72vw;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      background:rgba(255,198,47,.22);
+      border:1px solid rgba(255,198,47,.55);
+      font-size:12px;
+      color:#4b3a00;
+      font-weight:700;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      margin-top:14px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card-h{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(0,0,0,.06);
+      background:
+        linear-gradient(90deg, rgba(0,107,104,.08), rgba(255,198,47,.12));
+    }
+    .card-h strong{
+      font-size:13px;
+      letter-spacing:.2px;
+      color:var(--teal);
+    }
+    .card-b{padding:14px}
+
+    .row{display:grid; grid-template-columns:1fr; gap:12px}
+    .field{display:flex; flex-direction:column; gap:6px; min-width:0}
+    label{
+      font-size:12.5px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    input, textarea, select{
+      width:100%;
+      font-size:14.5px;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.14);
+      background:#fff;
+      outline:none;
+      transition: box-shadow .15s ease, border-color .15s ease;
+    }
+    textarea{min-height:96px; resize:vertical}
+    input:focus, textarea:focus, select:focus{
+      border-color: rgba(0,107,104,.55);
+      box-shadow: 0 0 0 4px rgba(0,107,104,.12);
+    }
+    .hint{
+      font-size:12px;
+      color: rgba(74,91,90,.95);
+      margin-top:2px;
+    }
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .btns{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid rgba(0,0,0,.12);
+      border-radius:12px;
+      padding:12px 12px;
+      font-size:14px;
+      font-weight:800;
+      cursor:pointer;
+      user-select:none;
+      background:#fff;
+      color:var(--text);
+      transition: transform .05s ease, filter .15s ease, opacity .15s ease;
+    }
+    .btn:active{transform: translateY(1px)}
+    .btn-primary{
+      background: var(--teal);
+      color:#fff;
+      border-color: rgba(0,107,104,.4);
+      box-shadow: 0 12px 25px rgba(0,107,104,.22);
+    }
+    .btn-accent{
+      background: var(--amber);
+      color:#2d2400;
+      border-color: rgba(255,198,47,.65);
+      box-shadow: 0 12px 25px rgba(255,198,47,.22);
+    }
+    .btn-ghost{
+      background: rgba(0,107,104,.06);
+      border-color: rgba(0,107,104,.18);
+      color: var(--teal);
+    }
+    .btn-danger{
+      background: rgba(184, 20, 20, .08);
+      border-color: rgba(184, 20, 20, .22);
+      color: #8b0d0d;
+    }
+    .btn[disabled]{opacity:.55; cursor:not-allowed}
+    .split{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    #map{
+      width:100%;
+      height: 280px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.10);
+      overflow:hidden;
+    }
+    .status{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(0,107,104,.05);
+      color:#093a38;
+      font-size:12.5px;
+      line-height:1.4;
+      white-space:pre-wrap;
+    }
+    .status.warn{
+      background: rgba(255,198,47,.16);
+      color:#4b3a00;
+      border-color: rgba(255,198,47,.45);
+    }
+    .status.err{
+      background: rgba(184, 20, 20, .10);
+      color:#8b0d0d;
+      border-color: rgba(184, 20, 20, .25);
+    }
+    .thumbs{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .thumb{
+      border:1px dashed rgba(0,0,0,.22);
+      border-radius:14px;
+      padding:10px;
+      min-height:110px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      justify-content:center;
+      align-items:center;
+      background: rgba(0,0,0,.02);
+    }
+    .thumb img{
+      width:100%;
+      height:110px;
+      object-fit:cover;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,.10);
+      background:#fff;
+    }
+    .thumb small{color:var(--muted); font-weight:700; text-align:center}
+
+    details summary{
+      cursor:pointer;
+      font-weight:900;
+      color: var(--teal);
+      list-style:none;
+      user-select:none;
+    }
+    details summary::-webkit-details-marker{display:none}
+    .fineprint{
+      font-size:12px;
+      color: rgba(74,91,90,.95);
+      line-height:1.45;
+    }
+
+    @media (min-width: 860px){
+      .grid{grid-template-columns: 1.15fr .85fr; align-items:start}
+      .btns{grid-template-columns: 1fr 1fr}
+      .row.cols-2{grid-template-columns:1fr 1fr}
+      .split{grid-template-columns: 1fr 1fr}
+      #map{height: 360px}
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>Thẩm Định Giá &amp; Khảo Sát Thực Địa</h1>
+      </div>
+      <div class="pill" title="Mobile-first • 1 file • No framework">
+        <span aria-hidden="true">●</span>
+        <span>Mobile-first</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <!-- LEFT: FORM -->
+      <section class="card">
+        <div class="card-h">
+          <strong>Thông tin hồ sơ</strong>
+          <span class="hint">Tự lưu cấu hình trên máy</span>
+        </div>
+        <div class="card-b">
+          <form id="appForm" autocomplete="on">
+            <div class="row cols-2">
+              <div class="field">
+                <label for="officerName">Họ tên cán bộ</label>
+                <input id="officerName" name="officerName" placeholder="VD: Nguyễn Văn A" required />
+              </div>
+              <div class="field">
+                <label for="caseCode">Mã hồ sơ</label>
+                <input id="caseCode" name="caseCode" placeholder="VD: TDG-2026-0001" required />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="realAddress">Địa chỉ thực tế</label>
+              <textarea id="realAddress" name="realAddress" placeholder="Tự nhập hoặc bấm Lấy GPS để gợi ý địa chỉ..."></textarea>
+              <div class="hint">Reverse geocode dùng OpenStreetMap Nominatim (miễn phí).</div>
+            </div>
+
+            <div class="row cols-2">
+              <div class="field">
+                <label for="lat">Vĩ độ</label>
+                <input id="lat" name="lat" inputmode="decimal" class="mono" placeholder="VD: 21.028511" />
+              </div>
+              <div class="field">
+                <label for="lng">Kinh độ</label>
+                <input id="lng" name="lng" inputmode="decimal" class="mono" placeholder="VD: 105.804817" />
+              </div>
+            </div>
+
+            <div class="row cols-2">
+              <div class="field">
+                <label for="redBookSerial">Số seri Sổ đỏ</label>
+                <input id="redBookSerial" name="redBookSerial" placeholder="VD: CS 123456" />
+              </div>
+              <div class="field">
+                <label for="origin">Nguồn gốc</label>
+                <input id="origin" name="origin" placeholder="VD: Nhà nước giao đất / Nhận chuyển nhượng..." />
+              </div>
+            </div>
+
+            <div class="row cols-2">
+              <div class="field">
+                <label for="parcel">Thửa đất</label>
+                <input id="parcel" name="parcel" placeholder="VD: 123" />
+              </div>
+              <div class="field">
+                <label for="mapSheet">Tờ bản đồ</label>
+                <input id="mapSheet" name="mapSheet" placeholder="VD: 05" />
+              </div>
+            </div>
+
+            <div class="row cols-2">
+              <div class="field">
+                <label for="areaNumber">Diện tích (số)</label>
+                <input id="areaNumber" name="areaNumber" inputmode="decimal" placeholder="VD: 120.5" />
+              </div>
+              <div class="field">
+                <label for="areaText">Diện tích (chữ)</label>
+                <input id="areaText" name="areaText" placeholder="VD: Một trăm hai mươi phẩy năm mét vuông" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="note">Ghi chú</label>
+              <textarea id="note" name="note" placeholder="Ghi chú khảo sát: lộ giới, hẻm, hiện trạng sử dụng, quy hoạch..."></textarea>
+            </div>
+
+            <div class="card" style="margin-top:12px;">
+              <div class="card-h">
+                <strong>Ảnh Sổ đỏ</strong>
+                <span class="hint">2 ảnh: mặt trước + mặt sau</span>
+              </div>
+              <div class="card-b">
+                <div class="split">
+                  <div class="field">
+                    <label for="imgFront">Upload ảnh Sổ đỏ (mặt trước)</label>
+                    <input id="imgFront" type="file" accept="image/*" />
+                  </div>
+                  <div class="field">
+                    <label for="imgBack">Upload ảnh Sổ đỏ (mặt sau)</label>
+                    <input id="imgBack" type="file" accept="image/*" />
+                  </div>
+                </div>
+                <div class="thumbs">
+                  <div class="thumb">
+                    <small>Mặt trước (preview)</small>
+                    <img id="previewFront" alt="Preview mặt trước" />
+                  </div>
+                  <div class="thumb">
+                    <small>Mặt sau (preview)</small>
+                    <img id="previewBack" alt="Preview mặt sau" />
+                  </div>
+                </div>
+                <div class="hint" style="margin-top:10px;">
+                  Khi bấm <b>AI Đọc Sổ Đỏ</b>, ảnh sẽ được gửi lên Gemini (từ máy bạn) để OCR/ích xuất thông tin.
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:12px;">
+              <div class="card-h">
+                <strong>Hành động</strong>
+                <span class="hint">Chạy trực tiếp trên trình duyệt</span>
+              </div>
+              <div class="card-b">
+                <div class="btns">
+                  <button class="btn btn-ghost" type="button" id="btnGPS">Lấy GPS</button>
+                  <button class="btn btn-accent" type="button" id="btnOCR">AI Đọc Sổ Đỏ</button>
+                  <button class="btn btn-ghost" type="button" id="btnAnalyze">Phân Tích Lợi Thế Vị Trí</button>
+                  <button class="btn btn-primary" type="button" id="btnSave">Lưu Hồ Sơ</button>
+                  <button class="btn btn-danger" type="button" id="btnReset">Làm Mới Form</button>
+                </div>
+                <div id="status" class="status" role="status" aria-live="polite">Sẵn sàng.</div>
+              </div>
+            </div>
+
+            <details style="margin-top:12px;">
+              <summary>Cấu hình (Gemini + Apps Script)</summary>
+              <div class="card" style="margin-top:10px;">
+                <div class="card-b">
+                  <div class="field">
+                    <label for="geminiKey">Gemini API Key (lưu localStorage)</label>
+                    <input id="geminiKey" class="mono" placeholder="Nhập API Key..." />
+                    <div class="hint">Lưu cục bộ trên trình duyệt máy bạn. Không tự gửi đi trừ khi bạn bấm các nút AI.</div>
+                  </div>
+                  <div class="field" style="margin-top:10px;">
+                    <label for="appsScriptUrl">Google Apps Script Web App URL (lưu localStorage)</label>
+                    <input id="appsScriptUrl" class="mono" placeholder="Dán URL triển khai Web App của Apps Script..." />
+                    <div class="hint">Ví dụ dạng: https://script.google.com/macros/s/.../exec</div>
+                  </div>
+                  <div class="fineprint" style="margin-top:10px;">
+                    - Gemini: dùng endpoint Generative Language API, model <span class="mono">gemini-2.5-flash-preview-04-17</span>.<br/>
+                    - Nominatim: yêu cầu có User-Agent/Referer; app này gọi trực tiếp từ trình duyệt (có thể bị giới hạn nếu gọi quá nhiều).<br/>
+                    - Nếu gặp lỗi CORS khi lưu Apps Script, hãy bật “Deploy as web app” và cho phép truy cập phù hợp.
+                  </div>
+                </div>
+              </div>
+            </details>
+          </form>
+        </div>
+      </section>
+
+      <!-- RIGHT: MAP + AI OUTPUT -->
+      <aside class="card">
+        <div class="card-h">
+          <strong>Bản đồ &amp; vị trí</strong>
+          <span class="hint">Leaflet + OSM</span>
+        </div>
+        <div class="card-b">
+          <div id="map" aria-label="Bản đồ Leaflet"></div>
+          <div class="hint" style="margin-top:10px;">
+            Gợi ý: bấm <b>Lấy GPS</b> để định vị và đặt marker. Bạn cũng có thể sửa tay vĩ độ/kinh độ.
+          </div>
+
+          <div class="card" style="margin-top:12px;">
+            <div class="card-h">
+              <strong>Kết quả AI</strong>
+              <span class="hint">Tóm tắt nhanh</span>
+            </div>
+            <div class="card-b">
+              <textarea id="aiOutput" placeholder="Kết quả OCR/Phân tích sẽ hiển thị ở đây..." style="min-height:190px;"></textarea>
+              <div class="hint" style="margin-top:8px;">
+                Nếu OCR trả về JSON, hệ thống sẽ cố gắng tự điền vào form (các trường tương ứng).
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // ---------- Utilities ----------
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(msg, type = "ok") {
+      const el = $("status");
+      el.textContent = msg;
+      el.classList.remove("warn","err");
+      if (type === "warn") el.classList.add("warn");
+      if (type === "err") el.classList.add("err");
+    }
+
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = () => reject(new Error("Không đọc được file ảnh."));
+        fr.readAsDataURL(file);
+      });
+    }
+
+    function tryParseNumber(s) {
+      if (s == null) return null;
+      const n = Number(String(s).trim().replace(",", "."));
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function stripCodeFences(text) {
+      const t = String(text || "").trim();
+      // Remove ```json ... ``` or ``` ... ```
+      if (t.startsWith("```")) {
+        return t.replace(/^```[a-zA-Z0-9]*\s*/,"").replace(/```$/,"").trim();
+      }
+      return t;
+    }
+
+    function extractJsonFromText(text) {
+      const t = stripCodeFences(text);
+      // Try direct JSON
+      try { return JSON.parse(t); } catch {}
+      // Try to find first {...} block
+      const m = t.match(/\{[\s\S]*\}/);
+      if (m) {
+        try { return JSON.parse(m[0]); } catch {}
+      }
+      return null;
+    }
+
+    function fillFormFromJson(obj) {
+      if (!obj || typeof obj !== "object") return false;
+
+      const mapping = {
+        officerName: ["officerName","hoTenCanBo","ho_ten_can_bo","hoTen","canBo"],
+        caseCode: ["caseCode","maHoSo","ma_ho_so","maHS","hoSo"],
+        realAddress: ["realAddress","diaChiThucTe","dia_chi_thuc_te","diaChi"],
+        lat: ["lat","viDo","vi_do","latitude"],
+        lng: ["lng","kinhDo","kinh_do","longitude","lon"],
+        redBookSerial: ["redBookSerial","soSeriSoDo","so_seri_so_do","soSeri","seri"],
+        parcel: ["parcel","thuaDat","thua_dat","soThua","thua"],
+        mapSheet: ["mapSheet","toBanDo","to_ban_do","soTo","to"],
+        areaNumber: ["areaNumber","dienTichSo","dien_tich_so","dienTich","area"],
+        areaText: ["areaText","dienTichChu","dien_tich_chu","dienTichBangChu"],
+        origin: ["origin","nguonGoc","nguon_goc"],
+        note: ["note","ghiChu","ghi_chu","chuThich"]
+      };
+
+      let changed = false;
+      for (const [fieldId, keys] of Object.entries(mapping)) {
+        for (const k of keys) {
+          if (obj[k] != null && String(obj[k]).trim() !== "") {
+            const el = $(fieldId);
+            if (!el) continue;
+            el.value = String(obj[k]).trim();
+            changed = true;
+            break;
+          }
+        }
+      }
+      return changed;
+    }
+
+    // ---------- LocalStorage config ----------
+    const LS_GEMINI_KEY = "tdg_gemini_api_key";
+    const LS_APPS_SCRIPT_URL = "tdg_apps_script_url";
+
+    function loadConfig() {
+      $("geminiKey").value = localStorage.getItem(LS_GEMINI_KEY) || "";
+      $("appsScriptUrl").value = localStorage.getItem(LS_APPS_SCRIPT_URL) || "";
+    }
+
+    function wireConfigAutosave() {
+      $("geminiKey").addEventListener("input", () => {
+        localStorage.setItem(LS_GEMINI_KEY, $("geminiKey").value.trim());
+      });
+      $("appsScriptUrl").addEventListener("input", () => {
+        localStorage.setItem(LS_APPS_SCRIPT_URL, $("appsScriptUrl").value.trim());
+      });
+    }
+
+    // ---------- Map ----------
+    let map, marker;
+    function initMap() {
+      map = L.map("map", { zoomControl: true });
+      const defaultLatLng = [21.028511, 105.804817]; // Hanoi fallback
+      map.setView(defaultLatLng, 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      marker = L.marker(defaultLatLng, { draggable: true }).addTo(map);
+      marker.on("dragend", () => {
+        const p = marker.getLatLng();
+        $("lat").value = p.lat.toFixed(6);
+        $("lng").value = p.lng.toFixed(6);
+        setStatus("Đã cập nhật tọa độ từ marker (kéo thả).");
+      });
+    }
+
+    function setMapLatLng(lat, lng, zoom = 17) {
+      if (!map || !marker) return;
+      const ll = [lat, lng];
+      map.setView(ll, zoom, { animate: true });
+      marker.setLatLng(ll);
+    }
+
+    // ---------- Nominatim reverse geocode ----------
+    async function reverseGeocode(lat, lng) {
+      const url = new URL("https://nominatim.openstreetmap.org/reverse");
+      url.searchParams.set("format", "json");
+      url.searchParams.set("lat", String(lat));
+      url.searchParams.set("lon", String(lng));
+      url.searchParams.set("zoom", "18");
+      url.searchParams.set("addressdetails", "1");
+
+      // Note: Browsers control User-Agent; Nominatim may rate-limit. Keep calls minimal.
+      const res = await fetch(url.toString(), {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+      if (!res.ok) {
+        throw new Error("Không reverse geocode được (Nominatim).");
+      }
+      const data = await res.json();
+      return data?.display_name || "";
+    }
+
+    // ---------- Gemini (Generative Language API) ----------
+    function getGeminiKeyOrThrow() {
+      const key = ($("geminiKey").value || localStorage.getItem(LS_GEMINI_KEY) || "").trim();
+      if (!key) throw new Error("Chưa có Gemini API Key. Vào phần Cấu hình để nhập API Key.");
+      return key;
+    }
+
+    async function geminiGenerateContent({ promptText, imageDataUrls = [], temperature = 0.2 }) {
+      const apiKey = getGeminiKeyOrThrow();
+
+      const endpointCandidates = [
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent",
+        "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateContent"
+      ];
+
+      const parts = [];
+      if (promptText) parts.push({ text: promptText });
+      for (const dataUrl of imageDataUrls) {
+        const [meta, b64] = String(dataUrl).split(",", 2);
+        const mime = (meta.match(/data:(.*?);base64/) || [])[1] || "image/jpeg";
+        parts.push({
+          inline_data: {
+            mime_type: mime,
+            data: b64
+          }
+        });
+      }
+
+      const body = {
+        contents: [{ role: "user", parts }],
+        generationConfig: { temperature }
+      };
+
+      let lastErr = null;
+      for (const base of endpointCandidates) {
+        const url = new URL(base);
+        url.searchParams.set("key", apiKey);
+        try {
+          const res = await fetch(url.toString(), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const msg = json?.error?.message || `Gemini lỗi HTTP ${res.status}`;
+            throw new Error(msg);
+          }
+          const text =
+            json?.candidates?.[0]?.content?.parts
+              ?.map(p => p?.text)
+              ?.filter(Boolean)
+              ?.join("\n") || "";
+          return { raw: json, text };
+        } catch (e) {
+          lastErr = e;
+          continue;
+        }
+      }
+      throw lastErr || new Error("Không gọi được Gemini.");
+    }
+
+    // ---------- Actions ----------
+    async function onGetGPS() {
+      setStatus("Đang lấy GPS...");
+      if (!navigator.geolocation) {
+        setStatus("Trình duyệt không hỗ trợ Geolocation.", "err");
+        return;
+      }
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        });
+      }).catch((err) => {
+        throw new Error("Không lấy được GPS. Hãy cấp quyền vị trí cho trình duyệt. (" + (err?.message || "unknown") + ")");
+      });
+
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      $("lat").value = lat.toFixed(6);
+      $("lng").value = lng.toFixed(6);
+      setMapLatLng(lat, lng, 18);
+
+      setStatus("Đã lấy GPS. Đang dịch ra địa chỉ...");
+      let addr = "";
+      try {
+        addr = await reverseGeocode(lat, lng);
+      } catch (e) {
+        setStatus("Đã lấy GPS nhưng không dịch được địa chỉ (Nominatim có thể bị giới hạn). Bạn có thể nhập địa chỉ thủ công.", "warn");
+        return;
+      }
+      if (addr) {
+        const current = ($("realAddress").value || "").trim();
+        $("realAddress").value = current ? current : addr;
+        setStatus("Hoàn tất: đã lấy GPS + gợi ý địa chỉ.");
+      } else {
+        setStatus("Đã lấy GPS nhưng địa chỉ trả về trống. Bạn nhập thủ công giúp nhé.", "warn");
+      }
+    }
+
+    async function onOcrRedBook() {
+      setStatus("Đang chuẩn bị ảnh để OCR...");
+      const front = $("imgFront").files?.[0] || null;
+      const back = $("imgBack").files?.[0] || null;
+      if (!front || !back) {
+        setStatus("Vui lòng upload đủ 2 ảnh Sổ đỏ (mặt trước + mặt sau).", "warn");
+        return;
+      }
+
+      const frontUrl = await readFileAsDataURL(front);
+      const backUrl = await readFileAsDataURL(back);
+
+      const prompt = [
+        "Bạn là trợ lý OCR cho Sổ đỏ Việt Nam.",
+        "Hãy trích xuất thông tin và TRẢ VỀ DUY NHẤT 1 JSON (không markdown, không code fence) với các khóa sau (để trống nếu không thấy):",
+        "{",
+        '  "redBookSerial": "",',
+        '  "parcel": "",',
+        '  "mapSheet": "",',
+        '  "areaNumber": "",',
+        '  "areaText": "",',
+        '  "origin": "",',
+        '  "realAddress": "",',
+        '  "note": ""',
+        "}",
+        "Nguyên tắc:",
+        "- Ưu tiên chính xác ký tự/chuỗi trên ảnh.",
+        "- Nếu có nhiều địa chỉ, chọn địa chỉ thửa đất/nhà đất liên quan.",
+        "- areaNumber chỉ chứa số (có thể có dấu . hoặc ,)."
+      ].join("\n");
+
+      setStatus("Đang gọi Gemini OCR (gemini-2.5-flash-preview-04-17)...");
+      const { text } = await geminiGenerateContent({
+        promptText: prompt,
+        imageDataUrls: [frontUrl, backUrl],
+        temperature: 0.1
+      });
+
+      $("aiOutput").value = text || "";
+
+      const obj = extractJsonFromText(text);
+      if (!obj) {
+        setStatus("Gemini đã trả về nhưng không parse được JSON. Bạn xem phần Kết quả AI để copy thủ công.", "warn");
+        return;
+      }
+      // Normalize numeric
+      if (obj.areaNumber != null) {
+        const n = tryParseNumber(obj.areaNumber);
+        if (n != null) obj.areaNumber = String(n);
+      }
+
+      const ok = fillFormFromJson(obj);
+      setStatus(ok ? "Đã OCR và tự điền form từ JSON." : "Đã OCR nhưng không có trường nào để tự điền (hoặc JSON trống).", ok ? "ok" : "warn");
+    }
+
+    async function onAnalyzeLocation() {
+      const lat = tryParseNumber($("lat").value);
+      const lng = tryParseNumber($("lng").value);
+      const addr = ($("realAddress").value || "").trim();
+
+      if (lat == null || lng == null) {
+        setStatus("Chưa có tọa độ. Hãy bấm Lấy GPS hoặc nhập vĩ độ/kinh độ.", "warn");
+        return;
+      }
+
+      const prompt = [
+        "Bạn là chuyên gia thẩm định giá và phân tích vị trí BĐS cho cán bộ ngân hàng.",
+        "Dựa trên tọa độ GPS và (nếu có) địa chỉ thực tế, hãy đánh giá tiềm năng vị trí khu đất theo các tiêu chí thực tiễn:",
+        "- Khả năng tiếp cận/giao thông",
+        "- Tiện ích xung quanh (khái quát, không cần liệt kê chính xác POI nếu không chắc)",
+        "- Mật độ dân cư/hoạt động thương mại (suy luận hợp lý, nêu rõ giả định)",
+        "- Rủi ro (ngập, hẻm nhỏ, pháp lý/qui hoạch cần kiểm tra, tiếng ồn...)",
+        "- Gợi ý các bước khảo sát bổ sung tại hiện trường",
+        "",
+        "Trả về dạng:",
+        "1) Tóm tắt 5-8 gạch đầu dòng",
+        "2) Kết luận ngắn (1-2 câu) về lợi thế/điểm yếu",
+        "",
+        `Tọa độ: ${lat}, ${lng}`,
+        `Địa chỉ (nếu có): ${addr || "(không có)"}`
+      ].join("\n");
+
+      setStatus("Đang gọi Gemini để phân tích vị trí...");
+      const { text } = await geminiGenerateContent({
+        promptText: prompt,
+        imageDataUrls: [],
+        temperature: 0.4
+      });
+
+      $("aiOutput").value = text || "";
+      setStatus("Hoàn tất phân tích vị trí.");
+    }
+
+    function collectFormData() {
+      const data = {
+        officerName: $("officerName").value.trim(),
+        caseCode: $("caseCode").value.trim(),
+        realAddress: $("realAddress").value.trim(),
+        lat: $("lat").value.trim(),
+        lng: $("lng").value.trim(),
+        redBookSerial: $("redBookSerial").value.trim(),
+        parcel: $("parcel").value.trim(),
+        mapSheet: $("mapSheet").value.trim(),
+        areaNumber: $("areaNumber").value.trim(),
+        areaText: $("areaText").value.trim(),
+        origin: $("origin").value.trim(),
+        note: $("note").value.trim(),
+        aiOutput: $("aiOutput").value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      return data;
+    }
+
+    async function onSave() {
+      const url = ($("appsScriptUrl").value || localStorage.getItem(LS_APPS_SCRIPT_URL) || "").trim();
+      if (!url) {
+        setStatus("Chưa có Apps Script URL. Vào phần Cấu hình để dán URL Web App Apps Script.", "warn");
+        return;
+      }
+
+      const payload = collectFormData();
+      if (!payload.officerName || !payload.caseCode) {
+        setStatus("Thiếu Họ tên cán bộ hoặc Mã hồ sơ.", "warn");
+        return;
+      }
+
+      setStatus("Đang lưu hồ sơ lên Apps Script...");
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).catch((e) => {
+        throw new Error("Không gửi được lên Apps Script. (" + (e?.message || "unknown") + ")");
+      });
+
+      let text = "";
+      try { text = await res.text(); } catch {}
+
+      if (!res.ok) {
+        setStatus("Lưu thất bại. HTTP " + res.status + (text ? (": " + text) : ""), "err");
+        return;
+      }
+      setStatus("Đã lưu hồ sơ thành công.");
+    }
+
+    function onReset() {
+      $("appForm").reset();
+      $("aiOutput").value = "";
+      $("previewFront").removeAttribute("src");
+      $("previewBack").removeAttribute("src");
+      setStatus("Đã làm mới form.");
+    }
+
+    function wireFilePreview() {
+      $("imgFront").addEventListener("change", async () => {
+        const f = $("imgFront").files?.[0];
+        if (!f) { $("previewFront").removeAttribute("src"); return; }
+        const url = await readFileAsDataURL(f);
+        $("previewFront").src = url;
+      });
+      $("imgBack").addEventListener("change", async () => {
+        const f = $("imgBack").files?.[0];
+        if (!f) { $("previewBack").removeAttribute("src"); return; }
+        const url = await readFileAsDataURL(f);
+        $("previewBack").src = url;
+      });
+    }
+
+    function wireLatLngManualUpdate() {
+      const handler = async () => {
+        const lat = tryParseNumber($("lat").value);
+        const lng = tryParseNumber($("lng").value);
+        if (lat == null || lng == null) return;
+        setMapLatLng(lat, lng, map.getZoom());
+      };
+      $("lat").addEventListener("change", handler);
+      $("lng").addEventListener("change", handler);
+      $("lat").addEventListener("blur", handler);
+      $("lng").addEventListener("blur", handler);
+    }
+
+    async function withBusy(button, fn) {
+      const prev = button.textContent;
+      button.disabled = true;
+      button.textContent = prev + " ...";
+      try { await fn(); }
+      catch (e) {
+        setStatus(e?.message || String(e), "err");
+      } finally {
+        button.disabled = false;
+        button.textContent = prev;
+      }
+    }
+
+    // ---------- Boot ----------
+    window.addEventListener("DOMContentLoaded", () => {
+      loadConfig();
+      wireConfigAutosave();
+      initMap();
+      wireFilePreview();
+      wireLatLngManualUpdate();
+
+      $("btnGPS").addEventListener("click", () => withBusy($("btnGPS"), onGetGPS));
+      $("btnOCR").addEventListener("click", () => withBusy($("btnOCR"), onOcrRedBook));
+      $("btnAnalyze").addEventListener("click", () => withBusy($("btnAnalyze"), onAnalyzeLocation));
+      $("btnSave").addEventListener("click", () => withBusy($("btnSave"), onSave));
+      $("btnReset").addEventListener("click", onReset);
+
+      setStatus("Sẵn sàng. Nhập hồ sơ hoặc bấm Lấy GPS để bắt đầu.");
+    });
+  </script>
+</body>
+</html>
